@@ -131,6 +131,45 @@ fn build_xtream_url(source: &mut Source) -> Result<Url> {
     Ok(url)
 }
 
+/// Fetch only category metadata, with no stream requests or SQLite access.
+pub async fn analyze_categories(mut source: Source) -> Result<Vec<crate::types::ProviderCategory>> {
+    let url = build_xtream_url(&mut source).map_err(|_| anyhow!("Invalid Xtream source"))?;
+    let user_agent = get_user_agent_from_source(&source)?;
+    let mut categories = Vec::new();
+    for (action, media_type) in [
+        (GET_LIVE_STREAM_CATEGORIES, media_type::LIVESTREAM),
+        (GET_VOD_CATEGORIES, media_type::MOVIE),
+        (GET_SERIES_CATEGORIES, media_type::SERIE),
+    ] {
+        let provider_categories =
+            get_xtream_http_data::<Vec<XtreamCategory>>(url.clone(), action, &user_agent)
+                .await
+                .map_err(|_| anyhow!("Unable to fetch Xtream categories"))?;
+        categories.extend(
+            provider_categories
+                .into_iter()
+                .map(|category| category_for_analysis(category, media_type)),
+        );
+    }
+    Ok(categories)
+}
+
+fn category_for_analysis(
+    category: XtreamCategory,
+    media_type: u8,
+) -> crate::types::ProviderCategory {
+    crate::types::ProviderCategory {
+        name: Some(category.category_name),
+        media_type,
+        provider_category_id: category
+            .category_id
+            .as_str()
+            .map(str::to_owned)
+            .or_else(|| category.category_id.as_u64().map(|id| id.to_string())),
+        entry_count: None,
+    }
+}
+
 pub async fn get_xtream(mut source: Source, wipe: bool) -> Result<()> {
     let url = build_xtream_url(&mut source)?;
     let user_agent = get_user_agent_from_source(&source)?;
@@ -614,4 +653,33 @@ pub async fn get_all_expiries() -> Result<HashMap<i64, i64>> {
         })
         .collect();
     Ok(statuses)
+}
+
+#[cfg(test)]
+mod category_analysis_tests {
+    use super::{XtreamCategory, category_for_analysis};
+    use crate::media_type;
+    use serde_json::json;
+
+    #[test]
+    fn preserves_names_and_ids_without_inventing_counts() {
+        for media_type in [media_type::LIVESTREAM, media_type::MOVIE, media_type::SERIE] {
+            for (id, expected) in [(json!(42), "42"), (json!("0042"), "0042")] {
+                let category = category_for_analysis(
+                    XtreamCategory {
+                        category_id: id,
+                        category_name: " DE | Movies ".to_string(),
+                    },
+                    media_type,
+                );
+                assert_eq!(category.name.as_deref(), Some(" DE | Movies "));
+                assert_eq!(category.provider_category_id.as_deref(), Some(expected));
+                assert_eq!(category.media_type, media_type);
+                assert_eq!(category.entry_count, None);
+                let value = serde_json::to_value(category).unwrap();
+                assert_eq!(value.as_object().unwrap().len(), 4);
+                assert!(value["entry_count"].is_null());
+            }
+        }
+    }
 }

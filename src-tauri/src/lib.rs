@@ -29,6 +29,7 @@ pub mod restream;
 pub mod settings;
 pub mod share;
 pub mod sort_type;
+pub mod source_analysis;
 pub mod source_type;
 pub mod sql;
 pub mod types;
@@ -57,6 +58,7 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
+            analyze_source,
             get_m3u8,
             get_m3u8_from_link,
             play,
@@ -198,6 +200,12 @@ fn build_tray_icon(app: &mut tauri::App) -> anyhow::Result<()> {
 
 fn map_err_frontend(e: Error) -> String {
     return format!("{:?}", e);
+}
+
+/// Accepts an unsaved Source; never imports or refreshes it.
+#[tauri::command]
+async fn analyze_source(source: Source) -> Result<Vec<types::ProviderCategory>, String> {
+    source_analysis::analyze(source).await
 }
 
 #[tauri::command(async)]

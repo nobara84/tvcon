@@ -48,6 +48,122 @@ struct M3UProcessing {
     line_count: usize,
 }
 
+/// Keeps only the pending entry and aggregated categories, never a playlist of channels.
+#[derive(Default)]
+struct CategoryAnalysis {
+    channel_line: Option<String>,
+    last_line: Option<String>,
+    categories: Vec<types::ProviderCategory>,
+    indices: HashMap<(Option<String>, u8), usize>,
+    use_tvg_id: Option<bool>,
+}
+
+impl CategoryAnalysis {
+    fn line(&mut self, line: String) {
+        if line.to_uppercase().starts_with("#EXTINF") {
+            self.commit();
+            self.channel_line = Some(line);
+        } else if !line.trim().is_empty() && !line.starts_with('#') {
+            self.last_line = Some(line);
+        }
+    }
+
+    fn commit(&mut self) {
+        let first = self.channel_line.take();
+        let second = self.last_line.take();
+        if let (Some(first), Some(second)) = (first, second) {
+            // Import's converter validates names and classifies media. Keep the raw
+            // group separately because import intentionally trims group names.
+            let name = GROUP_REGEX
+                .captures(&first)
+                .and_then(|caps| caps.get(1).map(|group| group.as_str().to_string()));
+            if let Ok(channel) = get_channel_from_lines(first, second, 0, self.use_tvg_id) {
+                let key = (name.clone(), channel.media_type);
+                let index = *self.indices.entry(key).or_insert_with(|| {
+                    let index = self.categories.len();
+                    self.categories.push(types::ProviderCategory {
+                        name,
+                        media_type: channel.media_type,
+                        provider_category_id: None,
+                        entry_count: Some(0),
+                    });
+                    index
+                });
+                if let Some(count) = self.categories[index].entry_count.as_mut() {
+                    *count += 1;
+                }
+            }
+        }
+    }
+
+    fn finish(mut self) -> Vec<types::ProviderCategory> {
+        self.commit();
+        self.categories
+    }
+}
+
+fn analyze_reader(
+    reader: impl BufRead,
+    use_tvg_id: Option<bool>,
+) -> Result<Vec<types::ProviderCategory>> {
+    let mut analysis = CategoryAnalysis {
+        use_tvg_id,
+        ..Default::default()
+    };
+    for line in reader.lines() {
+        analysis.line(line.map_err(|_| anyhow::anyhow!("Unable to read playlist"))?);
+    }
+    Ok(analysis.finish())
+}
+
+pub fn analyze_file(source: &Source) -> Result<Vec<types::ProviderCategory>> {
+    let path = source.url.as_ref().context("Missing playlist path")?;
+    let file = File::open(path).map_err(|_| anyhow::anyhow!("Unable to open playlist"))?;
+    analyze_reader(BufReader::new(file), source.use_tvg_id)
+}
+
+pub async fn analyze_url(source: &Source) -> Result<Vec<types::ProviderCategory>> {
+    let user_agent = get_user_agent_from_source(source)?;
+    let client = reqwest::Client::builder()
+        .user_agent(user_agent)
+        .build()
+        .map_err(|_| anyhow::anyhow!("Unable to create playlist client"))?;
+    let mut response = client
+        .get(source.url.as_ref().context("Missing playlist URL")?)
+        .send()
+        .await
+        .and_then(reqwest::Response::error_for_status)
+        .map_err(|_| anyhow::anyhow!("Unable to download playlist"))?;
+    let mut analysis = CategoryAnalysis {
+        use_tvg_id: source.use_tvg_id,
+        ..Default::default()
+    };
+    let mut pending = Vec::new();
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|_| anyhow::anyhow!("Unable to read playlist response"))?
+    {
+        pending.extend_from_slice(&chunk);
+        let mut consumed = 0;
+        for (index, byte) in pending.iter().enumerate() {
+            if *byte == b'\n' {
+                let line = std::str::from_utf8(&pending[consumed..index])
+                    .map_err(|_| anyhow::anyhow!("Invalid playlist encoding"))?;
+                analysis.line(line.trim_end_matches('\r').to_string());
+                consumed = index + 1;
+            }
+        }
+        pending.drain(..consumed);
+    }
+    if !pending.is_empty() {
+        let line =
+            String::from_utf8(pending).map_err(|_| anyhow::anyhow!("Invalid playlist encoding"))?;
+        analysis.line(line.trim_end_matches('\r').to_string());
+    }
+    Ok(analysis.finish())
+}
+
 pub fn read_m3u8(mut source: Source, wipe: bool) -> Result<()> {
     let path = match source.source_type {
         source_type::M3U_LINK => get_tmp_path(),
@@ -323,5 +439,72 @@ mod test_m3u {
         assert!(get_channel_from_lines(r#"#EXTINF:-1 tvg-id="Id Of Channel" tvg-name="Name Of Channel" tvg-logo="http://myurl.local/amazing/stuff.png" group-title="|EU| FRANCE HEVC",Alt Name Of Channel"#.to_string(), "http://myurl.local/1111/1111.ts".to_string(), 0, Some(true)).unwrap().name == "Name Of Channel");
         assert!(get_channel_from_lines(r#"#EXTINF:-1 tvg-id="Id Of Channel" tvg-name="" tvg-logo="http://myurl.local/amazing/stuff.png" group-title="|EU| FRANCE HEVC",Alt Name Of Channel"#.to_string(), "http://myurl.local/1111/1111.ts".to_string(), 0, Some(true)).unwrap().name == "Id Of Channel");
         assert!(get_channel_from_lines(r#"#EXTINF:-1 tvg-id="Id Of Channel" tvg-name="" tvg-logo="http://myurl.local/amazing/stuff.png" group-title="|EU| FRANCE HEVC",Alt Name Of Channel"#.to_string(), "http://myurl.local/1111/1111.ts".to_string(), 0, Some(false)).unwrap().name == "Alt Name Of Channel");
+    }
+}
+
+#[cfg(test)]
+mod category_analysis_tests {
+    use super::analyze_reader;
+    use crate::media_type;
+    use std::io::Cursor;
+
+    #[test]
+    fn counts_groups_preserving_exact_names_and_media_types() {
+        let playlist = concat!(
+            "#EXTM3U\n",
+            "#EXTINF:-1 group-title=\" DE | News \" tvg-name=\"One\",One\n",
+            "https://example.invalid/live/1.ts\n",
+            "#EXTINF:-1 group-title=\" DE | News \",Two\n",
+            "https://example.invalid/live/2.ts\n",
+            "#EXTINF:-1 group-title=\"EN\",Three\n",
+            "https://example.invalid/live/3.ts\n",
+            "#EXTINF:-1 group-title=\" DE | News \",Movie\n",
+            "https://example.invalid/video.mp4\n",
+            "#EXTINF:-1 group-title=\" DE | News \",Other Movie\n",
+            "https://example.invalid/video.mkv"
+        );
+        let categories = analyze_reader(Cursor::new(playlist), None).unwrap();
+        assert_eq!(categories.len(), 3);
+        assert_eq!(categories[0].name.as_deref(), Some(" DE | News "));
+        assert_eq!(categories[0].media_type, media_type::LIVESTREAM);
+        assert_eq!(categories[0].entry_count, Some(2));
+        assert_eq!(categories[1].name.as_deref(), Some("EN"));
+        assert_eq!(categories[1].entry_count, Some(1));
+        assert_eq!(categories[2].media_type, media_type::MOVIE);
+        assert_eq!(categories[2].entry_count, Some(2));
+        assert!(
+            categories
+                .iter()
+                .all(|category| category.provider_category_id.is_none())
+        );
+    }
+
+    #[test]
+    fn minimal_and_malformed_entries_do_not_panic_or_reuse_urls() {
+        let playlist = concat!(
+            "#EXTM3U\n",
+            "https://example.invalid/orphan.ts\n",
+            "#EXTINF:-1 group-title=\"Missing URL\",Missing\n",
+            "#EXTINF:-1,Minimal\r\n",
+            "#EXTVLCOPT:http-user-agent=Test\r\n",
+            "https://example.invalid/1.ts\r\n\r\n",
+            "#EXTINF:-1\nhttps://example.invalid/2.ts\n",
+            "#EXTINF:-1 group-title=\"Dangling\",Dangling\n"
+        );
+        let categories = analyze_reader(Cursor::new(playlist), Some(true)).unwrap();
+        assert_eq!(categories.len(), 1);
+        assert_eq!(categories[0].name, None);
+        assert_eq!(categories[0].entry_count, Some(1));
+        assert!(
+            analyze_reader(Cursor::new("#EXTM3U\n"), None)
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn invalid_encoding_returns_a_generic_error() {
+        let error = analyze_reader(Cursor::new(vec![0xff, b'\n']), None).unwrap_err();
+        assert_eq!(error.to_string(), "Unable to read playlist");
     }
 }

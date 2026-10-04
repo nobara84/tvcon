@@ -45,6 +45,18 @@ pub struct Season {
     pub source_id: i64,
 }
 
+/// Provider categories available before import. No database IDs or credentials.
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+pub struct ProviderCategory {
+    /// Exact provider name; None represents entries without group-title.
+    pub name: Option<String>,
+    /// Existing media_type constants: live = 0, movie = 1, series = 2.
+    pub media_type: u8,
+    pub provider_category_id: Option<String>,
+    /// None when counting would require fetching Xtream streams.
+    pub entry_count: Option<u64>,
+}
+
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct Source {
     #[serde(skip_serializing_if = "Option::is_none")]
