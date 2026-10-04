@@ -19,7 +19,9 @@ use {
     },
 };
 
+pub mod analysis_progress;
 pub mod bulk_action_type;
+pub mod category_selection;
 pub mod epg;
 pub mod log;
 pub mod m3u;
@@ -59,6 +61,10 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             analyze_source,
+            get_source_category_selections,
+            set_source_category_selections,
+            create_source_with_categories,
+            import_source_categories,
             get_m3u8,
             get_m3u8_from_link,
             play,
@@ -202,10 +208,72 @@ fn map_err_frontend(e: Error) -> String {
     return format!("{:?}", e);
 }
 
+#[tauri::command(async)]
+fn get_source_category_selections(
+    source_id: i64,
+) -> Result<Vec<category_selection::CategorySelection>, String> {
+    category_selection::saved(source_id)
+        .map_err(|_| "Unable to load category selections".to_string())
+}
+
+// An empty array explicitly clears the filter. Replacement is one transaction.
+#[tauri::command(async)]
+fn set_source_category_selections(
+    source_id: i64,
+    selections: Vec<category_selection::CategorySelection>,
+) -> Result<(), String> {
+    sql::do_tx(|tx| category_selection::replace(tx, source_id, selections))
+        .map_err(|_| "Unable to save category selections".to_string())
+}
+
+#[tauri::command(async)]
+fn create_source_with_categories(
+    source: Source,
+    selections: Vec<category_selection::CategorySelection>,
+) -> Result<i64, String> {
+    sql::do_tx(|tx| category_selection::create_source(tx, &source, selections))
+        .map_err(|_| "Unable to create source with category selections".to_string())
+}
+
+// Use saved source configuration and avoid returning credential-bearing request errors.
+#[tauri::command]
+async fn import_source_categories(source_id: i64) -> Result<(), String> {
+    let source = sql::get_source_from_id(source_id)
+        .map_err(|_| "Unable to load source for import".to_string())?;
+    utils::refresh_source(source)
+        .await
+        .map_err(|_| "Unable to import source categories".to_string())
+}
+
 /// Accepts an unsaved Source; never imports or refreshes it.
 #[tauri::command]
-async fn analyze_source(source: Source) -> Result<Vec<types::ProviderCategory>, String> {
-    source_analysis::analyze(source).await
+async fn analyze_source(
+    source: Source,
+    request_id: Option<String>,
+    window: tauri::WebviewWindow,
+) -> Result<Vec<types::ProviderCategory>, String> {
+    use tauri::Emitter;
+    #[derive(Clone, serde::Serialize)]
+    struct EventProgress {
+        request_id: String,
+        #[serde(flatten)]
+        progress: analysis_progress::AnalysisProgress,
+    }
+    let callback: Option<analysis_progress::ProgressCallback> = request_id.map(|request_id| {
+        Box::new(move |progress| {
+            let _ = window.emit_to(
+                tauri::EventTarget::WebviewWindow {
+                    label: window.label().to_string(),
+                },
+                "source-analysis-progress",
+                EventProgress {
+                    request_id: request_id.clone(),
+                    progress,
+                },
+            );
+        }) as analysis_progress::ProgressCallback
+    });
+    source_analysis::analyze_with_progress(source, callback).await
 }
 
 #[tauri::command(async)]

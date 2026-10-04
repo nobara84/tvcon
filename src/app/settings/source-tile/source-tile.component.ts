@@ -1,3 +1,4 @@
+import { CategorySelectionComponent } from "../../category-selection/category-selection.component";
 import { Component, Input } from "@angular/core";
 import { Source } from "../../models/source";
 import { SourceType } from "../../models/sourceType";
@@ -37,6 +38,20 @@ export class SourceTileComponent {
   get_source_type_name() {
     if (!this.source) return null;
     return SourceType[this.source.source_type!];
+  }
+
+  async categories() {
+    const source = this.editing ? this.editableSource : this.source;
+    if (!source || this.memory.Loading) return;
+    const ref = this.modal.open(CategorySelectionComponent, { size: "xl", windowClass: "tvcon-category-dialog", backdrop: "static", keyboard: false });
+    ref.componentInstance.source = { ...source };
+    try {
+      this.source = await ref.result;
+      this.editing = false;
+      this.editableSource = {};
+      this.memory.SeriesRefreshed.clear();
+      this.memory.RefreshSources.next(true);
+    } catch { /* Dialog cancelled; existing selection remains unchanged. */ }
   }
 
   async refresh() {

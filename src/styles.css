@@ -58,3 +58,10 @@ body {
   margin: 0;
   font-family: "Roboto", sans-serif;
 }
+/* Category management uses an internal virtual list and an always-visible footer. */
+.tvcon-category-dialog .modal-dialog {
+  width: calc(100vw - 32px);
+  max-width: 1440px;
+  margin: 3dvh auto;
+}
+.tvcon-category-dialog .modal-content { max-height: 94dvh; overflow: hidden; }

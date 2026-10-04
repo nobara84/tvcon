@@ -1,3 +1,4 @@
+import { CategorySelectionComponent } from "../category-selection/category-selection.component";
 import { Component, HostListener } from "@angular/core";
 import { Router } from "@angular/router";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
@@ -62,6 +63,30 @@ export class SetupComponent {
 
   goBack() {
     this.nav.navigateByUrl("settings");
+  }
+
+  async analyzeCategories() {
+    if (this.loading) return;
+    this.source.name = this.source.name?.trim();
+    if (this.source.source_type === SourceType.M3U) {
+      const file = await open({ multiple: false, directory: false,
+        filters: [{ name: "M3U", extensions: ["m3u", "m3u8"] }] });
+      if (!file) return;
+      this.source.url = file;
+      this.removeUnusedFieldsFromSource();
+    } else if (this.source.source_type === SourceType.M3ULink) {
+      this.source.url = this.source.url?.trim();
+      this.removeUnusedFieldsFromSource();
+    } else {
+      try { await this.prepareXtream(); }
+      catch { this.toastr.error("Xtream-Konfiguration prüfen."); return; }
+    }
+    const ref = this.modalService.open(CategorySelectionComponent, { size: "xl", windowClass: "tvcon-category-dialog", backdrop: "static", keyboard: false });
+    ref.componentInstance.source = { ...this.source };
+    try {
+      this.source = await ref.result;
+      this.success();
+    } catch { /* Dialog cancelled; no import. */ }
   }
 
   async getM3U() {
@@ -161,8 +186,7 @@ export class SetupComponent {
     this.loading = false;
   }
 
-  async getXtream() {
-    this.loading = true;
+  async prepareXtream() {
     this.source.use_tvg_id = undefined;
     this.source.url = this.source.url?.trim();
     this.source.username = this.source.username?.trim();
@@ -182,6 +206,11 @@ export class SetupComponent {
         this.source.url = url.toString();
       }
     }
+  }
+
+  async getXtream() {
+    this.loading = true;
+    await this.prepareXtream();
     try {
       await invoke("get_xtream", { source: this.source });
       this.success();

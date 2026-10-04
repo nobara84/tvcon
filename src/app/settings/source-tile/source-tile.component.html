@@ -1,5 +1,8 @@
 <div class="source">
     <h4>{{source?.name}}</h4>
+    <button type="button" class="btn btn-success" [disabled]="memory.Loading"
+        *ngIf="source?.source_type === sourceTypeEnum.M3U || source?.source_type === sourceTypeEnum.M3ULink || source?.source_type === sourceTypeEnum.Xtream"
+        (click)="categories()">Kategorien analysieren / auswählen</button>
     <div class="last-updated" *ngIf="source?.last_updated">
         Refreshed: {{source?.last_updated! * 1000 | timeAgo}}
     </div>

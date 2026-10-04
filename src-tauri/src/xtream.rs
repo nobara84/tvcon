@@ -201,23 +201,23 @@ pub async fn get_xtream(mut source: Source, wipe: bool) -> Result<()> {
     }
     let mut fail_count = 0;
     live.and_then(|live| process_xtream(&tx, live, live_cats?, &source, media_type::LIVESTREAM))
-        .unwrap_or_else(|e| {
-            log::log(format!("{:?}", e.context("Failed to process live")));
+        .unwrap_or_else(|_| {
+            log::log("Failed to process live during Xtream import".to_string());
             fail_count += 1;
         });
     vods.and_then(|vods: Vec<XtreamStream>| {
         process_xtream(&tx, vods, vods_cats?, &source, media_type::MOVIE)
     })
-    .unwrap_or_else(|e| {
-        log::log(format!("{:?}", e.context("Failed to process vods")));
+    .unwrap_or_else(|_| {
+        log::log("Failed to process movies during Xtream import".to_string());
         fail_count += 1;
     });
     series
         .and_then(|series: Vec<XtreamStream>| {
             process_xtream(&tx, series, series_cats?, &source, media_type::SERIE)
         })
-        .unwrap_or_else(|e| {
-            log::log(format!("{:?}", e.context("Failed to process series")));
+        .unwrap_or_else(|_| {
+            log::log("Failed to process series during Xtream import".to_string());
             fail_count += 1;
         });
     if fail_count > 2 {
@@ -252,6 +252,11 @@ fn process_xtream(
     source: &Source,
     stream_type: u8,
 ) -> Result<()> {
+    let selections = crate::category_selection::SelectionSet::load(
+        tx,
+        source.id.context("no source id")?,
+        source.source_type,
+    )?;
     let cats: HashMap<String, String> = cats
         .into_iter()
         .filter_map(|f| {
@@ -261,6 +266,14 @@ fn process_xtream(
         .collect();
     let mut groups: HashMap<String, i64> = HashMap::new();
     for live in streams {
+        let provider_id = live
+            .category_id
+            .as_str()
+            .map(str::to_owned)
+            .or_else(|| live.category_id.as_u64().map(|id| id.to_string()));
+        if !selections.includes(stream_type, provider_id.as_deref()) {
+            continue;
+        }
         let category_name = get_cat_name(&cats, get_serde_json_string(&live.category_id));
         convert_xtream_live_to_channel(live, &source, stream_type.clone(), category_name)
             .and_then(|mut channel| {
@@ -681,5 +694,54 @@ mod category_analysis_tests {
                 assert!(value["entry_count"].is_null());
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod selection_import_tests {
+    use super::*;
+    use crate::category_selection::{CategorySelection, replace, test_db};
+    #[test]
+    fn filters_before_xtream_conversion_and_group_insertion() {
+        let mut conn = test_db();
+        let tx = conn.transaction().unwrap();
+        replace(
+            &tx,
+            2,
+            vec![CategorySelection {
+                media_type: media_type::SERIE,
+                category_name: Some("Unrelated display name".to_string()),
+                provider_category_id: Some("42".to_string()),
+            }],
+        )
+        .unwrap();
+        let source: Source = serde_json::from_value(serde_json::json!({
+            "id": 2, "name": "Test", "source_type": 2, "enabled": true
+        }))
+        .unwrap();
+        for media_type in [media_type::LIVESTREAM, media_type::SERIE] {
+            let streams = serde_json::from_value(serde_json::json!([
+                {"name":"Included", "category_id":42, "series_id":1},
+                {"name":"Excluded", "category_id":"43", "series_id":2}
+            ]))
+            .unwrap();
+            let cats = serde_json::from_value(serde_json::json!([
+                {"category_id":"42", "category_name":"Renamed"},
+                {"category_id":"43", "category_name":"Excluded group"}
+            ]))
+            .unwrap();
+            process_xtream(&tx, streams, cats, &source, media_type).unwrap();
+        }
+        assert_eq!(
+            tx.query_row("SELECT COUNT(*) FROM channels", [], |row| row
+                .get::<_, i64>(0))
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            tx.query_row("SELECT name FROM groups", [], |row| row.get::<_, String>(0))
+                .unwrap(),
+            "Renamed"
+        );
     }
 }

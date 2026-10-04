@@ -234,6 +234,7 @@ fn apply_migrations() -> Result<()> {
               ANALYZE;
             "#,
         ),
+        M::up(crate::category_selection::SCHEMA),
     ]);
     migrations.to_latest(&mut sql)?;
     Ok(())
@@ -1052,6 +1053,10 @@ pub fn delete_groups_by_source(tx: &Transaction, source_id: i64) -> Result<()> {
 
 pub fn delete_source(id: i64) -> Result<()> {
     let sql = get_conn()?;
+    sql.execute(
+        "DELETE FROM source_category_selections WHERE source_id = ?",
+        [id],
+    )?;
     sql.execute(
         r#"
         DELETE FROM channels

@@ -1,0 +1,20 @@
+:host { display: flex; flex-direction: column; height: 94dvh; max-height: 94dvh; overflow: hidden; }
+.modal-header, .modal-footer { flex: 0 0 auto; }
+.modal-body { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow: hidden; gap: .3rem; }
+.category-viewport { min-height: 120px; flex: 1 1 auto; }
+.category-row { display: flex; align-items: center; gap: .65rem; height: 44px; padding: 0 .5rem; border-bottom: 1px solid #ffffff18; }
+.category-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.category-count { margin-left: auto; white-space: nowrap; }
+.media-tabs { display: flex; gap: .5rem; flex-wrap: wrap; }
+.modal-footer { position: sticky; bottom: 0; background: var(--bs-modal-bg, #212529); }
+.selection-summary { width: 100%; display: flex; flex-direction: column; gap: .2rem; }
+.clear-filter { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem; }
+.analysis-status { padding: .6rem 0; }
+.analysis-status p { margin: .25rem 0; }
+.analysis-status small { display: block; }
+progress { width: min(70%, 600px); height: 18px; margin-right: .5rem; accent-color: #5689e7; }
+
+@media (max-height: 650px) {
+  .modal-body { overflow-y: auto; }
+  .category-viewport { height: 180px; flex: 0 0 auto; }
+}

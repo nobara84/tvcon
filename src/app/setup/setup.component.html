@@ -76,6 +76,10 @@
                     </div>
                 </div>
             </div>
+            <div class="mt-3 text-center" *ngIf="source.source_type === sourceTypeEnum.M3U || source.source_type === sourceTypeEnum.M3ULink || source.source_type === sourceTypeEnum.Xtream">
+                <button type="button" class="btn btn-success" [disabled]="!form.valid" (click)="analyzeCategories()">Kategorien analysieren / auswählen</button>
+                <p class="mt-2">TVCon kann vor dem Import nur die gewünschten Kategorien auswählen. Die bisherigen Import-Schaltflächen importieren ohne neue Auswahl.</p>
+            </div>
             <div class="mt-3 text-center">
                 <button [disabled]="!form.valid" class="btn btn-primary d-inline-flex align-items-center">
                     <ng-container *ngIf="source.source_type == sourceTypeEnum.M3U">

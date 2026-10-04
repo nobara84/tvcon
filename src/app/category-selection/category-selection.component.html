@@ -1,0 +1,52 @@
+<div class="modal-header">
+  <h4 class="modal-title">TVCon – Kategorien auswählen</h4>
+  <button type="button" class="btn-close btn-close-white" aria-label="Schließen" [disabled]="busy" (click)="modal.dismiss()"></button>
+</div>
+<div class="modal-body">
+  <p class="text-danger" role="alert" *ngIf="error">{{error}}</p>
+  <button type="button" class="btn btn-primary align-self-start" [disabled]="busy" (click)="analyze()">{{analyzing ? 'Analyse läuft …' : 'Kategorien analysieren'}}</button>
+  <div *ngIf="analyzing" class="analysis-status" role="status" aria-live="polite">
+    <strong>Quelle wird analysiert …</strong>
+    <p>{{source.source_type === 2 ? 'Xtream-Kategorien werden geladen' : progress?.phase === 'DOWNLOADING' ? 'M3U-Playlist wird geladen und verarbeitet' : 'M3U-Playlist wird verarbeitet'}}</p>
+    <p>{{(progress?.analyzed_entries ?? 0) | number:'1.0-0':'de'}} Einträge analysiert · {{(progress?.category_count ?? 0) | number:'1.0-0':'de'}} Kategorien gefunden</p>
+    <progress max="100" [attr.value]="progress?.percentage ?? null" aria-label="Analysefortschritt"></progress>
+    <span>{{progress?.percentage === null || !progress ? 'Gesamtgröße unbekannt' : (progress.percentage | number:'1.0-0':'de') + ' %'}}</span>
+    <small *ngIf="progress">{{(progress.processed_bytes / 1048576) | number:'1.1-1':'de'}} MiB verarbeitet · {{(progress.received_bytes / 1048576) | number:'1.1-1':'de'}} MiB gelesen</small>
+  </div>
+  <p *ngIf="busy && !analyzing" role="status">TVCon speichert oder importiert die Quelle …</p>
+  <p *ngIf="analyzed && !analyzing && !error" class="mt-2">✓ Analyse abgeschlossen · {{totalEntries === null ? 'Einträge unbekannt' : (totalEntries | number:'1.0-0':'de') + ' Einträge'}} · {{allRows.length | number:'1.0-0':'de'}} Kategorien · Dauer: {{elapsedSeconds | number:'1.1-1':'de'}} s</p>
+  <ng-container *ngIf="analyzed">
+    <input class="form-control" [disabled]="busy" aria-label="Kategorien suchen" placeholder="Suche Kategorien…" [(ngModel)]="query" (ngModelChange)="filter()">
+    <div class="d-flex flex-wrap gap-2 my-2">
+      <button type="button" class="btn btn-secondary" [disabled]="busy" (click)="choose('de')">Deutsch auswählen</button>
+      <button type="button" class="btn btn-secondary" [disabled]="busy" (click)="choose('en')">Englisch auswählen</button>
+      <button type="button" class="btn btn-secondary" [disabled]="busy" (click)="choose('all')">Alle auswählen</button>
+      <button type="button" class="btn btn-secondary" [disabled]="busy" (click)="choose('none')">Keine auswählen</button>
+    </div>
+    <small>Sprachhilfen wählen zusätzlich passende Anbieterpräfixe aus. Alle/Keine gelten für die gesamte Liste.</small>
+    <label class="my-2"><input type="checkbox" [disabled]="busy" [(ngModel)]="onlySelected" (ngModelChange)="filter()"> Nur ausgewählte anzeigen</label>
+    <div class="media-tabs" role="tablist" aria-label="Medientyp">
+      <button *ngFor="let section of sections" type="button" role="tab" class="btn" [class.btn-primary]="activeType === section.type" [class.btn-secondary]="activeType !== section.type" [attr.aria-selected]="activeType === section.type" [disabled]="busy || section.total === 0" (click)="switchTab(section.type)">{{section.label}} {{section.total | number:'1.0-0':'de'}}</button>
+    </div>
+    <small>{{visibleRows.length | number:'1.0-0':'de'}} Treffer</small>
+    <cdk-virtual-scroll-viewport class="category-viewport" [itemSize]="44" [minBufferPx]="440" [maxBufferPx]="880" role="tabpanel">
+      <label *cdkVirtualFor="let row of visibleRows; trackBy: trackRow" class="category-row">
+        <input type="checkbox" [disabled]="busy" [checked]="row.checked" (change)="toggle(row, $any($event.target).checked)">
+        <span class="category-name" [title]="row.category.name ?? 'Ohne Kategorie'">{{row.category.name === null ? 'Ohne Kategorie' : row.category.name}}</span>
+        <span class="category-count">{{row.category.entry_count === null ? 'Anzahl unbekannt' : (row.category.entry_count | number:'1.0-0':'de')}}</span>
+      </label>
+    </cdk-virtual-scroll-viewport>
+    <p *ngIf="visibleRows.length === 0">Keine Kategorien für diese Ansicht.</p>
+  </ng-container>
+</div>
+<div class="modal-footer">
+  <div class="selection-summary" *ngIf="analyzed">
+    <strong>Ausgewählt: {{selected.size | number:'1.0-0':'de'}} Kategorien · {{selectedEntries === null ? 'Einträge unbekannt' : (selectedEntries | number:'1.0-0':'de') + ' Einträge'}}</strong>
+    <small *ngIf="missingSelected">{{missingSelected}} gespeicherte Kategorien fehlen in dieser Analyse und bleiben ausgewählt.</small>
+    <small *ngIf="!importAll && selected.size === 0">Mindestens eine Kategorie auswählen oder den Filter ausdrücklich löschen.</small>
+    <div class="clear-filter"><button type="button" class="btn btn-link btn-sm" [disabled]="busy" (click)="clearFilter()">Filter löschen – alles importieren</button><small>Entfernt die Kategorieauswahl und erlaubt uneingeschränkten Import, einschließlich neuer Kategorien.</small></div>
+    <small *ngIf="importAll">Der Filter wird beim Speichern gelöscht.</small>
+  </div>
+  <button type="button" class="btn btn-secondary" [disabled]="busy || !analyzed || (!importAll && selected.size === 0)" (click)="save(false)">Auswahl speichern</button>
+  <button type="button" class="btn btn-primary" [disabled]="busy || !analyzed || (!importAll && selected.size === 0)" (click)="save(true)">Auswahl speichern / Importieren</button>
+</div>
