@@ -1,10 +1,10 @@
 [Desktop Entry]
 Categories={{categories}}
 Comment={{comment}}
-Exec=env WEBKIT_DISABLE_DMABUF_RENDERER=1 open_tv
+Exec=env WEBKIT_DISABLE_DMABUF_RENDERER=1 tvcon
 Icon={{icon}}
-Keywords=open;tv;opentv;
+Keywords=tv;tvcon;
 Name={{name}}
-StartupWMClass=open_tv
+StartupWMClass=tvcon
 Terminal=false
 Type=Application

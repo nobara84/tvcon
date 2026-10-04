@@ -2978,7 +2978,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "open_tv"
+name = "tvcon"
 version = "1.9.1"
 dependencies = [
  "anyhow",

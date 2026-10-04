@@ -34,7 +34,7 @@ fn init_logger() -> bool {
 }
 
 fn get_and_create_log_path() -> String {
-    let mut path = ProjectDirs::from("dev", "fredol", "open-tv")
+    let mut path = ProjectDirs::from("de", "tvcon", "tvcon")
         .unwrap()
         .cache_dir()
         .to_owned();

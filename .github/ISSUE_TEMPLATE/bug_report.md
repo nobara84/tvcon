@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a report to help Fred TV improve
+about: Create a report to help TVCon improve
 title: "[BUG]"
 labels: ''
 assignees: Fredolx

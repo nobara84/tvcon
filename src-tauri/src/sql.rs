@@ -33,7 +33,7 @@ fn create_connection_pool() -> Pool<SqliteConnectionManager> {
 }
 
 fn get_and_create_sqlite_db_path() -> String {
-    let mut path = ProjectDirs::from("dev", "fredol", "open-tv")
+    let mut path = ProjectDirs::from("de", "tvcon", "tvcon")
         .unwrap()
         .data_dir()
         .to_owned();

@@ -1,5 +1,5 @@
 [package]
-name = "open_tv"
+name = "tvcon"
 version = "1.9.1"
 description = "Fast And Powerful IPTV App"
 authors = ["Frédéric Lachapelle"]
@@ -11,7 +11,7 @@ rust-version = "1.91.1"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "open_tv_lib"
+name = "tvcon_lib"
 crate-type = ["staticlib", "cdylib", "lib"]
 
 [build-dependencies]

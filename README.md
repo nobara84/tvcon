@@ -1,6 +1,10 @@
-# Fred TV (Formerly Open TV)
+# TVCon
 
-Completely rewritten to accommodate new features and to be even speedier, Fred TV has been carefully crafted to deliver the best IPTV experience.
+TVCon is a fork of Fred TV (formerly Open TV), created by Frédéric Lachapelle. The existing GPL-2.0 license and upstream attribution are preserved.
+
+TVCon uses the application identifier `de.tvcon.app` and its own runtime directories via `ProjectDirs::from("de", "tvcon", "tvcon")`. It starts with a separate database and does not migrate or modify an installed Fred TV/Open TV database. Default recordings are stored in the `tvcon` folder under your Videos directory.
+
+The Angular project remains `open-tv`, with output in `dist/open-tv/browser`, matching Tauri configuration. The documentation below, including download links, Docker images, screenshots, donation links, and name disclaimer, is retained from upstream and refers to Fred TV/Open TV rather than a published TVCon release.
 
 <a href="https://apps.microsoft.com/detail/9PBWX3RKR1QX?launch=true&mode=mini">
 	<img src="https://get.microsoft.com/images/en-us%20dark.svg" width="350"/>

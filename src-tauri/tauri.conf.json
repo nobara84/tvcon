@@ -1,7 +1,7 @@
 {
-  "productName": "Fred TV",
+  "productName": "TVCon",
   "version": "1.9.1",
-  "identifier": "dev.fredol.open-tv",
+  "identifier": "de.tvcon.app",
   "build": {
     "frontendDist": "../dist/open-tv/browser",
     "devUrl": "http://localhost:4200",
@@ -11,7 +11,7 @@
   "app": {
     "windows": [
       {
-        "title": "Fred TV (v1.9.1)",
+        "title": "TVCon (v1.9.1)",
         "width": 800,
         "height": 600,
         "resizable": true,

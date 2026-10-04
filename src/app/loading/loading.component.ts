@@ -9,7 +9,7 @@ export class LoadingComponent {
   @Input()
   center: boolean = false;
   count = 0;
-  texts: string[] = ["Consider donating to Fred TV", "Loading your channels..."];
+  texts: string[] = ["Consider donating to upstream Fred TV", "Loading your channels..."];
 
   currentText: string = "";
 

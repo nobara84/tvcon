@@ -141,7 +141,7 @@ fn get_playlist_dir(mut folder: PathBuf) -> String {
 }
 
 fn get_restream_folder() -> Result<PathBuf> {
-    let mut path = directories::ProjectDirs::from("dev", "fredol", "open-tv")
+    let mut path = directories::ProjectDirs::from("de", "tvcon", "tvcon")
         .context("can't find project folder")?
         .cache_dir()
         .to_owned();

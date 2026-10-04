@@ -46,4 +46,4 @@ RUN apt update && apt install -y ./open-tv.deb \
   && apt clean && rm -rf /var/lib/apt/lists/* \
   && rm open-tv.deb
 
-CMD ["open_tv"]
+CMD ["tvcon"]

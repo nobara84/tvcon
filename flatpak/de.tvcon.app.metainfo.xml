@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop">
-  <id>dev.fredol.open-tv</id>
+  <id>de.tvcon.app</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-2.0</project_license>
-  <name>Fred TV</name>
+  <name>TVCon</name>
   <summary>Fast And Powerful IPTV App</summary>
   <content_rating type="oars-1.1" />
   <branding>
@@ -11,7 +11,7 @@
     <color type="primary" scheme_preference="dark">#4549cc</color>
   </branding>
   <description>
-    <p>Completely rewritten to accomodate new features and to be even speedier, Fred TV has been carefully crafted to deliver the best IPTV experience</p>
+    <p>TVCon is a fork of Fred TV (formerly Open TV), created by Frédéric Lachapelle.</p>
     <p>Features:</p>
     <ul>
       <li>Import your IPTV channels from any source (M3U File, M3U link, Xtream) 🗃️</li>
@@ -22,12 +22,12 @@
       <li>Refresh your sources when you need it 🔄</li>
       <li>Add channels to favorites 🌟</li>
     </ul>
-    <p>PLEASE consider donating, I've been developing this app solo for the past 2 years! Instructions on my github (https://github.com/Fredolx/open-tv)</p>
+    <p>Please consider supporting upstream development by Frédéric Lachapelle: https://github.com/Fredolx/open-tv</p>
   </description>
     <categories>
     <category>AudioVideo</category>
   </categories>
-  <launchable type="desktop-id">dev.fredol.open-tv.desktop</launchable>
+  <launchable type="desktop-id">de.tvcon.app.desktop</launchable>
   <releases>
   <release version="1.9.1" date="2026-01-18">
     <description>

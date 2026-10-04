@@ -7,7 +7,7 @@ import { DownloadService } from "./download.service";
   styleUrl: "./app.component.css",
 })
 export class AppComponent {
-  title = "open-tv";
+  title = "TVCon";
 
   constructor(private download: DownloadService) {}
 
