@@ -4,7 +4,7 @@ TVCon is a fork of Fred TV (formerly Open TV), created by Frédéric Lachapelle.
 
 TVCon uses the application identifier `de.tvcon.app` and its own runtime directories via `ProjectDirs::from("de", "tvcon", "tvcon")`. It starts with a separate database and does not migrate or modify an installed Fred TV/Open TV database. Default recordings are stored in the `tvcon` folder under your Videos directory.
 
-The Angular project remains `open-tv`, with output in `dist/open-tv/browser`, matching Tauri configuration. The documentation below, including download links, Docker images, screenshots, donation links, and name disclaimer, is retained from upstream and refers to Fred TV/Open TV rather than a published TVCon release.
+The Angular project remains `open-tv`, with output in `dist/open-tv/browser`, matching Tauri configuration. The documentation below, including download links, Docker images, screenshots, and name disclaimer, is retained from upstream and refers to Fred TV/Open TV rather than a published TVCon release.
 
 <a href="https://apps.microsoft.com/detail/9PBWX3RKR1QX?launch=true&mode=mini">
 	<img src="https://get.microsoft.com/images/en-us%20dark.svg" width="350"/>
@@ -21,9 +21,6 @@ The Angular project remains `open-tv`, with output in `dist/open-tv/browser`, ma
 <a href="https://play.google.com/store/apps/details?id=dev.fredol.open_tv">
   <img src="https://raw.githubusercontent.com/Fredolx/open-tv/refs/heads/main/readme_imgs/gplay.png">
 </a>
-
-# This project NEEDS your help. Please consider donating on [Github](https://github.com/sponsors/Fredolx), [Paypal](https://paypal.me/fredolx) or directly by [crypto](#donate-crypto-thank-you)
-I've been developing and maintaining this project alone and for entirely for free over the past 2 years. I am in dire need of support to continue developing this project. I've never added annoying donation pop-ups or anything of the sort to make sure you have the fastest and cleanest IPTV experience and I'm committed to keep this project FREE & OPEN-SOURCE. To keep that commitment, I need your support!
 
 ![Image of the app](https://github.com/Fredolx/open-tv/blob/main/screenshots/demo1.png)
 
@@ -118,37 +115,6 @@ Why disabling:
   - If the stream often drops completely. It will prevent the stream from jumping too far ahead/behind
   - If you have a good internet/provider and want lower latency
   - Can prevent some weird bugs/slowdowns
-
-## Donate Crypto (Thank you!)
-BTC:
-```
-bc1q7v27u4mrxhtqzl97pcp4vl52npss760epsheu3
-```
-
-ETH:
-```
-0x171D5B628eff75c98c141aD5584FffA209274365
-```
-
-LTC:
-```
-ltc1qzxgp2grt9ayvpv0dur7lgzgf88yp09h2ytmga0
-```
-
-BCH:
-```
-bitcoincash:qz4mauqyytkvhp9yze0qhgn2nnlv4z5glckyysxg2n
-```
-
-SOL:
-```
-AM7roSrxBKrS5mG7q6aXnQHZKh3ArtBxvG3x1B1VjKhj
-```
-
-BNB:
-```
-0x0C8C5217a8044b3736aD82CCFB9f099597b65253
-```
 
 ## Disclaimer
 

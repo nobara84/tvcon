@@ -22,7 +22,6 @@
       <li>Refresh your sources when you need it 🔄</li>
       <li>Add channels to favorites 🌟</li>
     </ul>
-    <p>Please consider supporting upstream development by Frédéric Lachapelle: https://github.com/Fredolx/open-tv</p>
   </description>
     <categories>
     <category>AudioVideo</category>
@@ -265,5 +264,4 @@
  <url type="bugtracker">https://github.com/Fredolx/open-tv/issues</url>
  <url type="faq">https://github.com/Fredolx/open-tv</url>
  <url type="help">https://github.com/Fredolx/open-tv/issues</url>
- <url type="donation">https://github.com/sponsors/Fredolx</url>
 </component>
