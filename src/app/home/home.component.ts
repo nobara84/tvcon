@@ -41,6 +41,12 @@ import { Node } from "../models/node";
 import { NodeType } from "../models/nodeType";
 import { Stack } from "../models/stack";
 
+import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
+import { EPG } from "../models/epg";
+import { LibrarySection, sectionFilters, programmeSummary } from "./library-state";
+
+import { NetworkStatusService } from "../network-status.service";
+
 import { BulkActionType } from '../models/bulkActionType';
 
 @Component({
@@ -78,6 +84,153 @@ import { BulkActionType } from '../models/bulkActionType';
 })
 export class HomeComponent implements AfterViewInit, OnDestroy {
   channels: Channel[] = [];
+  section: LibrarySection = "live";
+  categories: Channel[] = [];
+  movieRows: Channel[][] = [];
+  movieColumns = 6;
+  movieRowHeight = 370;
+  private movieResize?: ResizeObserver;
+  private movieViewport?: CdkVirtualScrollViewport;
+  @ViewChild("movieViewport") set movieView(view: CdkVirtualScrollViewport | undefined) {
+    this.movieResize?.disconnect();
+    this.movieViewport = view;
+    if (view) {
+      this.movieResize = new ResizeObserver(entries => {
+        const width = entries[0].contentRect.width;
+        const posterWidth = Math.min(420, Math.max(180, window.innerWidth * 0.11));
+        this.movieColumns = Math.max(1, Math.floor(width / posterWidth));
+        this.movieRowHeight = Math.round(((width - (this.movieColumns - 1) * 16 - 8) / this.movieColumns) * 1.5 + 78);
+        this.buildMovieRows();
+        view.checkViewportSize();
+      });
+      this.movieResize.observe(view.elementRef.nativeElement);
+    }
+  }
+  buildMovieRows() {
+    this.movieRows = [];
+    for (let i = 0; i < this.channels.length; i += this.movieColumns)
+      this.movieRows.push(this.channels.slice(i, i + this.movieColumns));
+  }
+  movieScrolled(index: number) {
+    if (this.destroyed || this.section !== "movies") return;
+    if (index + Math.ceil((this.movieViewport?.getViewportSize() || 700) / (this.movieRowHeight || 370)) + 2 >= this.movieRows.length)
+      void this.loadMore();
+  }
+  categoryScrolled(index: number) {
+    if (this.destroyed) return;
+    if (index + Math.ceil((this.categoryViewport?.getViewportSize() || 700) / 44) + 8 >= this.categories.length)
+      void this.loadCategories(this.categoryPage + 1);
+  }
+  categoryQuery = "";
+  categoryPage = 1;
+  categoryEnd = false;
+  categoryLoading = false;
+  selectedCategory?: Channel;
+  selectedChannel?: Channel;
+  selectedArtwork = true;
+  currentProgramme?: EPG;
+  nextProgramme?: EPG;
+  epgLoading = false;
+  epgMessage = "";
+  private destroyed = false;
+  private libraryRequest = 0;
+  private categoryRequest = 0;
+  private epgRequest = 0;
+  @ViewChild("categoryViewport") categoryViewport?: CdkVirtualScrollViewport;
+
+  async selectSection(section: LibrarySection) {
+    if (!this.filters) return;
+    this.section = section;
+    this.filters = sectionFilters(this.filters, section);
+    this.filters.source_ids = Array.from(this.memory.Sources.keys());
+    this.chkLiveStream = this.filters.media_types.includes(MediaType.livestream);
+    this.chkMovie = this.filters.media_types.includes(MediaType.movie);
+    this.chkSerie = this.filters.media_types.includes(MediaType.serie);
+    this.nodeStack.clear();
+    this.selectedCategory = undefined;
+    this.selectedChannel = undefined;
+    this.epgRequest++;
+    this.clearSearch();
+    this.categoryQuery = "";
+    await Promise.all([this.load(), this.loadCategories()]);
+  }
+
+  async loadCategories(page = 1) {
+    if (!this.filters) return;
+    if (page > 1 && (this.categoryLoading || this.categoryEnd)) return;
+    const request = ++this.categoryRequest;
+    if (page === 1) { this.categories = []; this.categoryEnd = false; this.categoryPage = 1; }
+    this.categoryLoading = true;
+    const filters: Filters = { ...this.filters, source_ids: Array.from(this.memory.Sources.keys()),
+      view_type: ViewMode.Categories, page, query: this.categoryQuery,
+      group_id: undefined, series_id: undefined, season: undefined, use_keywords: false };
+    try {
+      const categories = await this.queryChannels(filters);
+      if (request !== this.categoryRequest) return;
+      this.categories = page === 1 ? categories : [...this.categories, ...categories.filter(c => !this.categories.some(old => old.id === c.id))];
+      this.categoryPage = page;
+      this.categoryEnd = categories.length < this.PAGE_SIZE;
+      if (page === 1) this.categoryViewport?.scrollToIndex(0);
+    } catch (e) {
+      if (request === this.categoryRequest) {
+        this.categories = [];
+        this.categoryEnd = true;
+        this.error.handleError(e);
+      }
+    } finally {
+      if (request === this.categoryRequest) {
+        this.categoryLoading = false;
+        if (!this.categoryEnd) setTimeout(() => this.categoryScrolled(this.categoryViewport?.getRenderedRange().start || 0));
+      }
+    }
+  }
+
+  async selectCategory(category?: Channel) {
+    if (!this.filters) return;
+    this.selectedCategory = category;
+    this.filters.group_id = category?.id;
+    this.filters.series_id = undefined;
+    this.filters.season = undefined;
+    this.filters.source_ids = Array.from(this.memory.Sources.keys());
+    this.filters.view_type = this.section === "favorites" ? ViewMode.Favorites : ViewMode.All;
+    this.nodeStack.clear();
+    this.clearSearch();
+    await this.load();
+  }
+
+  async selectChannel(channel: Channel) {
+    this.selectedChannel = channel;
+    this.selectedArtwork = true;
+    this.currentProgramme = this.nextProgramme = undefined;
+    this.epgMessage = "";
+    const request = ++this.epgRequest;
+    this.epgLoading = false;
+    if (channel.media_type !== MediaType.livestream || !this.memory.XtreamSourceIds.has(channel.source_id!)) {
+      this.epgMessage = "Für diesen Sender sind keine Programmdaten verfügbar.";
+      return;
+    }
+    this.epgLoading = true;
+    try {
+      const epg = await invoke<EPG[]>("get_epg", { channel });
+      if (request !== this.epgRequest) return;
+      const summary = programmeSummary(epg, Date.now() / 1000);
+      this.currentProgramme = summary.current;
+      this.nextProgramme = summary.next;
+      if (!summary.current && !summary.next) this.epgMessage = "Keine aktuellen Programmdaten verfügbar.";
+    } catch {
+      if (request === this.epgRequest) this.epgMessage = "Programmdaten konnten nicht geladen werden.";
+    } finally {
+      if (request === this.epgRequest) this.epgLoading = false;
+    }
+  }
+
+  trackChannel(index: number, channel: Channel) { return channel.id ?? index; }
+
+  queryChannels(filters: Filters): Promise<Channel[]> { return invoke("search", { filters }); }
+
+  async previousPage() {
+    if (this.filters && this.filters.page > 1 && !this.loading) await this.load(false, this.filters.page - 1);
+  }
   readonly viewModeEnum = ViewMode;
   bulkActionType = BulkActionType;
   readonly mediaTypeEnum = MediaType;
@@ -86,7 +239,6 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
   focus: number = 0;
   focusArea = FocusArea.Tiles;
   viewType = ViewMode.All;
-  currentWindowSize: number = window.innerWidth;
   subscriptions: Subscription[] = [];
   filters?: Filters;
   chkLiveStream = true;
@@ -98,13 +250,9 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
   prevSearchValue: String = "";
   loading = false;
   nodeStack: Stack = new Stack();
-  showScrollTop = false;
-
-  scrollToTop() {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
 
   constructor(
+    public network: NetworkStatusService,
     private router: Router,
     public memory: MemoryService,
     public toast: ToastrService,
@@ -156,7 +304,7 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
           this.filters = {
             source_ids: Array.from(this.memory.Sources.keys()),
             view_type: settings.default_view ?? ViewMode.All,
-            media_types: [MediaType.livestream, MediaType.movie, MediaType.serie],
+            media_types: [MediaType.livestream],
             page: 1,
             use_keywords: false,
             sort: SortType.provider,
@@ -165,7 +313,12 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
             this.memory.Sort.next([settings.default_sort, false]);
             this.filters.sort = settings.default_sort;
           }
-          this.chkSerie = this.anyXtream();
+          this.section = this.filters.view_type === ViewMode.Favorites ? "favorites" : "live";
+          if (this.section === "favorites") this.filters.media_types = [MediaType.livestream, MediaType.movie, MediaType.serie];
+          this.chkLiveStream = true;
+          this.chkMovie = this.section === "favorites";
+          this.chkSerie = this.section === "favorites";
+          this.loadCategories();
           if (settings.refresh_on_start === true && !sessionStorage.getItem("refreshedOnStart")) {
             sessionStorage.setItem("refreshedOnStart", "true");
             this.refreshOnStart().then((_) => _);
@@ -191,7 +344,7 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
   }
 
   async reload() {
-    await this.load();
+    await Promise.all([this.load(), this.loadCategories()]);
   }
 
   reset() {
@@ -206,7 +359,7 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
     );
     this.subscriptions.push(
       this.memory.SetFocus.subscribe((focus) => {
-        this.focus = focus;
+        if (focus >= 0) this.focus = focus;
       }),
     );
     this.subscriptions.push(
@@ -220,7 +373,7 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
             this.filters?.view_type,
           ),
         );
-        if (dto.type == NodeType.Category) this.filters!.group_id = dto.id;
+        if (dto.type == NodeType.Category) { this.filters!.group_id = dto.id; this.selectedCategory = { id: dto.id, name: dto.name }; }
         else if (dto.type == NodeType.Series) {
           this.filters!.series_id = dto.id;
           this.filters!.source_ids = [dto.sourceId!];
@@ -238,6 +391,7 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
     this.subscriptions.push(
       this.memory.Refresh.subscribe((scroll) => {
         this.load();
+        this.loadCategories();
         if(scroll)
           window.scrollTo({ top: 0, behavior: "instant" });
       }),
@@ -252,59 +406,54 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
   }
 
   clearSearch() {
-    this.search.nativeElement.value = "";
+    if (this.search) this.search.nativeElement.value = "";
     this.prevSearchValue = "";
     this.filters!.query = "";
   }
 
   async loadMore() {
-    this.load(true);
+    if (!this.loading && !this.reachedMax) await this.load(true);
   }
 
-  async load(more = false) {
+  async load(more = false, page?: number) {
+    if (!this.filters) return;
+    if (more && this.loading) return;
+    const request = ++this.libraryRequest;
+    if (!more) {
+      this.channels = []; this.buildMovieRows(); this.reachedMax = false;
+      this.movieViewport?.scrollToIndex(0);
+    }
+    const requestedPage = page ?? (more ? this.filters.page + 1 : 1);
+    const filters = { ...this.filters, media_types: [...this.filters.media_types], page: requestedPage };
     this.loading = true;
-    if (more) {
-      this.filters!.page++;
-    } else {
-      this.filters!.page = 1;
-    }
     try {
-      let channels: Channel[] = await invoke("search", { filters: this.filters });
-      if (!more) {
-        this.channels = channels;
-        this.channelsVisible = true;
-        // prevent flicker of hiding opacity
-        this.viewType = this.filters!.view_type;
-      } else {
-        this.channels = this.channels.concat(channels);
+      const channels = await this.queryChannels(filters);
+      if (request !== this.libraryRequest) return;
+      this.channels = more && this.section === 'movies'
+        ? [...this.channels, ...channels.filter(c => !this.channels.some(old => old.id === c.id))] : channels;
+      this.buildMovieRows();
+      if (this.selectedChannel && !this.channels.some(channel => channel.id === this.selectedChannel?.id)) {
+        this.selectedChannel = undefined;
+        this.epgRequest++;
       }
+      this.filters.page = requestedPage;
+      this.channelsVisible = true;
+      this.viewType = filters.view_type;
       this.reachedMax = channels.length < this.PAGE_SIZE;
+      if (!more) this.focus = 0;
+      if (this.section === 'movies' && !this.reachedMax)
+        setTimeout(() => this.movieScrolled(this.movieViewport?.getRenderedRange().start || 0));
     } catch (e) {
-      this.error.handleError(e);
+      if (request === this.libraryRequest) {
+        this.channels = [];
+        this.selectedChannel = undefined;
+        this.epgRequest++;
+        this.reachedMax = true;
+        this.error.handleError(e);
+      }
+    } finally {
+      if (request === this.libraryRequest) this.loading = false;
     }
-    this.loading = false;
-  }
-
-  checkScrollTop() {
-    const scrollPosition =
-      window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-    this.showScrollTop = scrollPosition > 300;
-  }
-
-  async checkScrollEnd() {
-    if (this.reachedMax === true || this.loading === true) return;
-    const scrollHeight = document.documentElement.scrollHeight;
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    const clientHeight = window.innerHeight || document.documentElement.clientHeight;
-    if (scrollTop + clientHeight >= scrollHeight * 0.75) {
-      await this.loadMore();
-    }
-  }
-
-  @HostListener("window:scroll", ["$event"])
-  async scroll(event: any) {
-    this.checkScrollTop();
-    await this.checkScrollEnd();
   }
 
   ngAfterViewInit(): void {
@@ -318,13 +467,19 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
             this.focusArea = FocusArea.Tiles;
             if (this.channelsVisible && event.target.value != this.prevSearchValue)
               this.channelsVisible = false;
+            if (event.target.value !== this.prevSearchValue) {
+              this.libraryRequest++;
+              this.loading = false;
+              this.channels = []; this.buildMovieRows();
+            }
             this.prevSearchValue = event.target.value;
             return event.target.value;
           }),
           debounceTime(300),
         )
         .subscribe(async (term: string) => {
-          this.filters!.query = term;
+          if (!this.filters || term !== this.search.nativeElement.value) return;
+          this.filters.query = term;
           await this.load();
         }),
     );
@@ -434,6 +589,7 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
     if (index == -1) this.filters!.media_types.push(mediaType);
     else this.filters!.media_types.splice(index, 1);
     this.load();
+    this.loadCategories();
   }
 
   filtersVisible() {
@@ -441,7 +597,18 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
   }
 
   async switchMode(viewMode: ViewMode) {
+    if (!this.filters) return;
+    if (viewMode === ViewMode.Favorites) { await this.selectSection("favorites"); return; }
     if (viewMode == this.filters?.view_type) return;
+    this.selectedCategory = undefined;
+    if (this.section === "favorites") {
+      this.section = "live";
+      this.filters.media_types = [MediaType.livestream];
+      this.chkLiveStream = true;
+      this.chkMovie = this.chkSerie = false;
+      this.loadCategories();
+    }
+    this.filters!.source_ids = Array.from(this.memory.Sources.keys());
     this.filters!.series_id = undefined;
     this.filters!.group_id = undefined;
     this.filters!.view_type = viewMode;
@@ -501,7 +668,7 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
 
   async goBack() {
     var node = this.nodeStack.pop();
-    if (node.type == NodeType.Category) this.filters!.group_id = undefined;
+    if (node.type == NodeType.Category) { this.filters!.group_id = undefined; this.selectedCategory = undefined; }
     else if (node.type == NodeType.Series) {
       this.filters!.series_id = undefined;
       this.filters!.source_ids = Array.from(this.memory.Sources.keys());
@@ -512,7 +679,7 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
       this.search.nativeElement.value = node.query;
       this.filters!.query = node.query;
     }
-    if (node.fromViewType && this.filters!.view_type !== node.fromViewType) {
+    if (node.fromViewType !== undefined && this.filters!.view_type !== node.fromViewType) {
       this.filters!.view_type = node.fromViewType;
     }
     await this.load();
@@ -524,17 +691,17 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
 
   async nav(key: string) {
     if (this.searchFocused()) return;
-    let lowSize = this.currentWindowSize < 768;
+    const columns = this.section === "movies" ? this.movieColumns : this.section === "live" ? 1 : (window.innerWidth < 600 ? 1 : window.innerWidth < 900 ? 2 : 3);
     if (this.memory.currentContextMenu?.menuOpen || this.memory.ModalRef) {
       return;
     }
     let tmpFocus = 0;
     switch (key) {
       case "ArrowUp":
-        tmpFocus -= 3;
+        tmpFocus -= columns;
         break;
       case "ArrowDown":
-        tmpFocus += 3;
+        tmpFocus += columns;
         break;
       case "ShiftTab":
       case "ArrowLeft":
@@ -546,7 +713,6 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
         break;
     }
     let goOverSize = this.shortFiltersMode() ? 1 : 2;
-    if (lowSize && tmpFocus % 3 == 0 && this.focusArea == FocusArea.Tiles) tmpFocus / 3;
     tmpFocus += this.focus;
     if (tmpFocus < 0) {
       this.changeFocusArea(false);
@@ -556,14 +722,16 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
       this.changeFocusArea(true);
     } else if (
       this.focusArea == FocusArea.Tiles &&
-      tmpFocus >= this.filters!.page * 36 &&
+      tmpFocus >= this.channels.length &&
       !this.reachedMax
     )
-      await this.loadMore();
+      { await this.loadMore(); this.selectFirstChannelDelayed(0); }
     else {
       if (tmpFocus >= this.channels.length && this.focusArea == FocusArea.Tiles)
         tmpFocus = (this.channels.length == 0 ? 1 : this.channels.length) - 1;
       this.focus = tmpFocus;
+      if (this.section === 'movies' && this.focusArea === FocusArea.Tiles)
+        this.movieViewport?.scrollToIndex(Math.floor(this.focus / this.movieColumns));
       setTimeout(() => {
         document.getElementById(`${FocusAreaPrefix[this.focusArea]}${this.focus}`)?.focus();
       }, 0);
@@ -587,6 +755,10 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
   }
 
   applyFocusArea(down: boolean) {
+    if (this.focusArea === FocusArea.Filters) {
+      const details = document.querySelector<HTMLDetailsElement>(".tools details");
+      if (details) details.open = true;
+    }
     this.focus = down
       ? 0
       : this.focusArea == FocusArea.Filters
@@ -609,7 +781,7 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
       this.goBackHotkey();
       event.preventDefault();
     }
-    if (event.key == "Tab" && !this.memory.ModalRef) {
+    if (event.key == "Tab" && !this.memory.ModalRef && document.activeElement?.id.startsWith("tile-")) {
       event.preventDefault();
       this.nav(event.shiftKey ? "ShiftTab" : "Tab");
     }
@@ -630,6 +802,11 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.destroyed = true;
+    this.movieResize?.disconnect();
+    this.libraryRequest++;
+    this.categoryRequest++;
+    this.epgRequest++;
     this.subscriptions.forEach((x) => x.unsubscribe());
   }
 

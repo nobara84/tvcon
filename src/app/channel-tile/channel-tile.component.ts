@@ -3,6 +3,8 @@ import {
   Component,
   ElementRef,
   Input,
+  Output,
+  EventEmitter,
   OnDestroy,
   Renderer2,
   ViewChild,
@@ -47,6 +49,11 @@ export class ChannelTileComponent implements OnDestroy, AfterViewInit {
     private renderer: Renderer2,
     private download: DownloadService,
   ) { }
+  @Input() movieLibrary = false;
+  @Input() presentation: "list" | "poster" = "list";
+  @Input() selected = false;
+  @Input() categoryName?: string;
+  @Output() channelSelected = new EventEmitter<Channel>();
   @Input() channel?: Channel;
   @Input() id!: number;
   @Input() viewMode: number = 0;
@@ -115,6 +122,7 @@ export class ChannelTileComponent implements OnDestroy, AfterViewInit {
       });
       return;
     }
+    if (this.channel) this.channelSelected.emit(this.channel);
     let file = undefined;
     if (record && (this.memory.IsContainer || this.memory.AlwaysAskSave)) {
       file = await save({
@@ -391,6 +399,7 @@ export class ChannelTileComponent implements OnDestroy, AfterViewInit {
   }
 
   async downloadVod() {
+    if (this.channel) this.channelSelected.emit(this.channel);
     let file = undefined;
     if (this.memory.IsContainer || this.memory.AlwaysAskSave) {
       file = await save({

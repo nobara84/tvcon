@@ -20,6 +20,30 @@ use rusqlite::{OptionalExtension, Row, Transaction, params, params_from_iter};
 use rusqlite_migration::{M, Migrations};
 
 const PAGE_SIZE: u8 = 36;
+
+fn page_offset(page: u32) -> i64 {
+    i64::from(page.saturating_sub(1)) * i64::from(PAGE_SIZE)
+}
+
+#[cfg(test)]
+mod pagination_tests {
+    use super::page_offset;
+
+    #[test]
+    fn large_library_pages_do_not_wrap() {
+        let filters: crate::types::Filters = serde_json::from_str(
+            r#"{"source_ids":[],"media_types":[0],"view_type":0,"page":4943,"use_keywords":false,"sort":0}"#,
+        )
+        .unwrap();
+        assert_eq!(page_offset(filters.page), 177912);
+        assert_eq!(page_offset(1), 0);
+        assert_eq!(page_offset(256), 9180);
+        assert_eq!(page_offset(4943), 177912);
+        assert_eq!(page_offset(u32::MAX), 154618822584);
+        assert_eq!(page_offset(0), 0);
+    }
+}
+
 pub const DB_NAME: &str = "db.sqlite";
 static CONN: LazyLock<Pool<SqliteConnectionManager>> = LazyLock::new(|| create_connection_pool());
 
@@ -466,7 +490,7 @@ pub fn search(filters: Filters) -> Result<Vec<Channel>> {
         return search_series(filters);
     }
     let sql = get_conn()?;
-    let offset: u16 = filters.page as u16 * PAGE_SIZE as u16 - PAGE_SIZE as u16;
+    let offset = page_offset(filters.page);
     let media_types = match filters.series_id.is_some() {
         true => vec![1],
         false => filters.media_types.clone().unwrap(),
@@ -519,6 +543,11 @@ pub fn search(filters: Filters) -> Result<Vec<Channel>> {
     } else if filters.sort != sort_type::PROVIDER {
         sql_query += &format!("\nORDER BY name {}", order);
     }
+    if sql_query.contains("ORDER BY") {
+        sql_query += ", id ASC";
+    } else {
+        sql_query += "\nORDER BY id ASC";
+    }
     sql_query += "\nLIMIT ?, ?";
     let mut params: Vec<&dyn rusqlite::ToSql> = Vec::with_capacity(
         baked_params + media_types.len() + filters.source_ids.len() + keywords.len(),
@@ -546,7 +575,7 @@ pub fn search(filters: Filters) -> Result<Vec<Channel>> {
 
 fn search_series(filters: Filters) -> Result<Vec<Channel>> {
     let sql = get_conn()?;
-    let offset: u16 = filters.page as u16 * PAGE_SIZE as u16 - PAGE_SIZE as u16;
+    let offset = page_offset(filters.page);
     let query = filters.query.unwrap_or("".to_string());
     let keywords: Vec<String> = match filters.use_keywords {
         true => query
@@ -570,6 +599,11 @@ fn search_series(filters: Filters) -> Result<Vec<Channel>> {
         _ => "ASC",
     };
     sql_query += &format!("\nORDER BY season_number {}", order);
+    if sql_query.contains("ORDER BY") {
+        sql_query += ", id ASC";
+    } else {
+        sql_query += "\nORDER BY id ASC";
+    }
     sql_query += "\nLIMIT ?, ?";
     let mut params: Vec<&dyn rusqlite::ToSql> =
         Vec::with_capacity(2 + filters.source_ids.len() + keywords.len());
@@ -818,7 +852,7 @@ fn apply_bulk_channels(
 
 fn search_hidden(filters: Filters) -> Result<Vec<Channel>> {
     let sql = get_conn()?;
-    let offset: u16 = filters.page as u16 * PAGE_SIZE as u16 - PAGE_SIZE as u16;
+    let offset = page_offset(filters.page);
 
     let media_types = match filters.series_id.is_some() {
         true => vec![1],
@@ -930,7 +964,7 @@ fn to_sql_like(query: Option<String>) -> String {
 
 pub fn search_group(filters: Filters) -> Result<Vec<Channel>> {
     let sql = get_conn()?;
-    let offset: u16 = filters.page as u16 * PAGE_SIZE as u16 - PAGE_SIZE as u16;
+    let offset = page_offset(filters.page);
     let query = filters.query.unwrap_or("".to_string());
     let media_types = filters.media_types.context("no media types")?;
     let keywords: Vec<String> = match filters.use_keywords {
@@ -961,6 +995,11 @@ pub fn search_group(filters: Filters) -> Result<Vec<Channel>> {
             _ => "ASC",
         };
         sql_query += &format!("\nORDER BY name {}", order);
+    }
+    if sql_query.contains("ORDER BY") {
+        sql_query += ", id ASC";
+    } else {
+        sql_query += "\nORDER BY id ASC";
     }
     sql_query += "\nLIMIT ?, ?";
     params.extend(to_to_sql(&keywords));

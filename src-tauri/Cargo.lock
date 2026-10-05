@@ -2978,44 +2978,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tvcon"
-version = "1.9.1"
-dependencies = [
- "anyhow",
- "base64 0.22.1",
- "bytes",
- "chrono",
- "directories",
- "futures",
- "if-addrs",
- "indexmap 2.12.1",
- "log",
- "r2d2",
- "r2d2_sqlite",
- "regex",
- "reqwest",
- "rusqlite",
- "rusqlite_migration",
- "serde",
- "serde_json",
- "shell-words",
- "simplelog",
- "tauri",
- "tauri-build",
- "tauri-plugin-clipboard-manager",
- "tauri-plugin-dialog",
- "tauri-plugin-notification",
- "tauri-plugin-shell",
- "tauri-plugin-single-instance",
- "tokio",
- "tokio-util",
- "url",
- "warp",
- "which",
- "winsplit",
-]
-
-[[package]]
 name = "openssl"
 version = "0.10.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5345,6 +5307,44 @@ dependencies = [
  "thiserror 1.0.69",
  "url",
  "utf-8",
+]
+
+[[package]]
+name = "tvcon"
+version = "1.9.1"
+dependencies = [
+ "anyhow",
+ "base64 0.22.1",
+ "bytes",
+ "chrono",
+ "directories",
+ "futures",
+ "if-addrs",
+ "indexmap 2.12.1",
+ "log",
+ "r2d2",
+ "r2d2_sqlite",
+ "regex",
+ "reqwest",
+ "rusqlite",
+ "rusqlite_migration",
+ "serde",
+ "serde_json",
+ "shell-words",
+ "simplelog",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-clipboard-manager",
+ "tauri-plugin-dialog",
+ "tauri-plugin-notification",
+ "tauri-plugin-shell",
+ "tauri-plugin-single-instance",
+ "tokio",
+ "tokio-util",
+ "url",
+ "warp",
+ "which",
+ "winsplit",
 ]
 
 [[package]]

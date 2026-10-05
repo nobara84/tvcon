@@ -1,16 +1,23 @@
 <div id="tile-{{ id }}" placement="top" tabindex="0" (keyup.enter)="click()" [ngClass]="{
     playing: starting,
+    poster: presentation === 'poster',
+    'movie-poster': movieLibrary,
+    selected: selected,
     faded: fade
 }" [ngbTooltip]="channel?.name" triggers="hover" (click)="click()" class="channel d-inline-flex p-2 align-items-center"
   (contextmenu)="onRightClick($event)">
   <div class="image-container me-2">
     <img (error)="showImage = false" class="channel-image" *ngIf="channel?.image && showImage"
-      src="{{ channel?.image }}" />
+      loading="lazy" alt="" src="{{ channel?.image }}" />
+    <span *ngIf="movieLibrary && (!channel?.image || !showImage)" class="poster-placeholder">◇</span>
   </div>
   <div class="channel-title-container d-flex flex-column justify-content-center">
     <div class="channel-title">{{ channel?.name }}</div>
-    <div class="channel-source">{{ getSourceName() }}</div>
+    <div class="channel-source" *ngIf="!movieLibrary">{{ getSourceName() }}</div>
+
+    <div class="channel-source" *ngIf="presentation === 'poster' && !movieLibrary">{{ channel?.media_type === mediaTypeEnum.serie ? 'Serie' : channel?.media_type === mediaTypeEnum.movie ? 'Film / VOD' : channel?.media_type === mediaTypeEnum.livestream ? 'Live-TV' : channel?.media_type === mediaTypeEnum.group ? 'Kategorie' : 'Staffel' }}<span *ngIf="categoryName"> · {{ categoryName }}</span></div>
   </div>
+  <button *ngIf="movieLibrary" class="poster-favorite" [attr.aria-label]="channel?.favorite ? 'Favorit entfernen' : 'Favorisieren'" [attr.aria-pressed]="!!channel?.favorite" (click)="$event.stopPropagation(); favorite()">{{ channel?.favorite ? '★' : '☆' }}</button>
   <div class="ms-auto d-flex flex-column justify-content-center align-items-center h-100">
     <svg *ngIf="channel?.tv_archive === true" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
       class="archive-icon">

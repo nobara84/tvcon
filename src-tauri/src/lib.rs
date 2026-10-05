@@ -27,6 +27,7 @@ pub mod log;
 pub mod m3u;
 pub mod media_type;
 pub mod mpv;
+pub mod network_status;
 pub mod restream;
 pub mod settings;
 pub mod share;
@@ -60,6 +61,7 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
+            network_status::get_network_status,
             analyze_source,
             get_source_category_selections,
             set_source_category_selections,

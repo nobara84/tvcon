@@ -1,3 +1,4 @@
+import { ScrollingModule } from '@angular/cdk/scrolling';
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -65,6 +66,7 @@ import { TimeUntilPipe } from './pipes/time-until.pipe';
   ],
   imports: [
     BrowserModule,
+    ScrollingModule,
     FormsModule,
     BrowserAnimationsModule,
     AppRoutingModule,

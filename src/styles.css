@@ -65,3 +65,8 @@ body {
   margin: 3dvh auto;
 }
 .tvcon-category-dialog .modal-content { max-height: 94dvh; overflow: hidden; }
+
+.tvcon-shell .network-status { font-size:12px; white-space:nowrap; }
+.tvcon-shell .status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#93a0ad; margin-right:6px; }
+.tvcon-shell .vpn-active .status-dot { background:#4cda88; }
+.tvcon-shell .vpn-inactive .status-dot { background:#ed6666; }

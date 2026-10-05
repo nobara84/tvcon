@@ -100,3 +100,20 @@
   height: 1.25rem;
   color: #ffc107;
 }
+.channel { background: #1c2630; border: 1px solid #2a3846; }
+.channel:hover, .channel.selected { background: #23414b; border-color: #53c9c4; }
+.channel:focus-visible { outline: 2px solid #76e4de; outline-offset: -2px; box-shadow: none; }
+.poster.channel { height:240px; display:flex!important; flex-direction:column; align-items:stretch!important; position:relative; }
+.poster .image-container { width:100%; height:160px; min-height:160px; margin:0!important; background:#111920; }
+.poster .channel-title-container { margin:8px 0 0; min-height:40px; }
+.poster .ms-auto { position:absolute; right:12px; top:12px; height:auto!important; }
+.movie-poster.channel { height:calc(var(--movie-row-height, 370px) - 20px); padding:0!important; display:flex!important; flex-direction:column; align-items:stretch!important; position:relative; }
+.movie-poster .image-container { width:100%; height:calc(var(--movie-row-height, 370px) - 78px); min-height:calc(var(--movie-row-height, 370px) - 78px); margin:0!important; background:#111920; }
+.movie-poster .channel-image { width:100%; height:100%; object-fit:contain; }
+.movie-poster .channel-title-container { margin:8px 10px; min-height:38px; flex:none; }
+.movie-poster .channel-title { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.movie-poster .ms-auto { position:absolute; right:8px; top:8px; height:auto!important; background:#111920bb; border-radius:4px; }
+.movie-poster-placeholder { color:#627485; font-size:40px; }
+
+.poster-favorite { position:absolute; right:8px; top:8px; z-index:1; border:0; border-radius:4px; background:#111920cc; color:#ffc107; font-size:22px; }
+.movie-poster .ms-auto { display:none!important; }

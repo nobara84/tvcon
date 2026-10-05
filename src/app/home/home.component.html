@@ -1,121 +1,106 @@
 <ng-keyboard-shortcuts [shortcuts]="shortcuts"></ng-keyboard-shortcuts>
-<ng-keyboard-shortcuts-help [key]="'f1'" [closeKey]="'escape'" [title]="'Help'" />
-<div class="mb-5">
-  <svg fill="currentColor" class="settings" (click)="openSettings()" viewBox="0 0 24 24">
-    <path
-      d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" />
-  </svg>
-  <div class="container-lg reserve-settings-space">
-    <div class="row mb-3">
-      <div class="mx-auto col-md-8 col-12">
-        <div class="search-box">
-          <input autocomplete="off" type="text" id="search" #search style="width: 100%" class="form-control"
-            placeholder="Type to search..." />
-          <svg (click)="toggleKeywords()" *ngIf="!filters?.use_keywords" class="keyword-search-icon"
-            xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <title>Search By Keywords</title>
-            <path
-              d="M22 13C22 13.53 21.79 14.04 21.41 14.41L21 14.83C20.91 11.97 18.84 9.62 16.11 9.11L11 4H4V11L9.11 16.11C9.62 18.84 11.97 20.91 14.83 21L14.41 21.41C14.04 21.79 13.53 22 13 22C12.47 22 11.97 21.79 11.59 21.42L2.59 12.42C2.21 12.04 2 11.53 2 11V4C2 2.9 2.9 2 4 2H11C11.53 2 12.04 2.21 12.41 2.58L21.41 11.58C21.79 11.96 22 12.47 22 13M5 6.5C5 7.33 5.67 8 6.5 8S8 7.33 8 6.5 7.33 5 6.5 5 5 5.67 5 6.5M15.11 10.61C12.61 10.61 10.61 12.61 10.61 15.11S12.61 19.61 15.11 19.61C16 19.61 16.8 19.36 17.5 18.93L20.61 22L22 20.61L18.92 17.5C19.36 16.82 19.61 16 19.61 15.11C19.61 12.61 17.61 10.61 15.11 10.61M15.11 12.61C16.5 12.61 17.61 13.73 17.61 15.11S16.5 17.61 15.11 17.61 12.61 16.5 12.61 15.11 13.73 12.61 15.11 12.61" />
-          </svg>
-          <svg (click)="toggleKeywords()" *ngIf="filters?.use_keywords" class="keyword-search-icon"
-            xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <title>Search By Keywords</title>
-            <path
-              d="M21.41 11.58L12.41 2.58C12.05 2.22 11.55 2 11 2H4C2.89 2 2 2.89 2 4V11C2 11.55 2.22 12.05 2.59 12.41L11.58 21.41C11.95 21.77 12.45 22 13 22S14.05 21.77 14.41 21.41L14.83 21C11.6 20.9 9 18.26 9 15C9 11.69 11.69 9 15 9C18.26 9 20.9 11.6 21 14.83L21.41 14.41C21.78 14.05 22 13.55 22 13C22 12.44 21.77 11.94 21.41 11.58M5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7M15.11 10.61C17.61 10.61 19.61 12.61 19.61 15.11C19.61 16 19.36 16.82 18.92 17.5L22 20.61L20.61 22L17.5 18.93C16.8 19.36 16 19.61 15.11 19.61C12.61 19.61 10.61 17.61 10.61 15.11S12.61 10.61 15.11 10.61M15.11 12.61C13.73 12.61 12.61 13.73 12.61 15.11S13.73 17.61 15.11 17.61 17.61 16.5 17.61 15.11 16.5 12.61 15.11 12.61" />
-          </svg>
-          <svg (click)="reload()" class="reload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <title>Reload View</title>
-            <path
-              d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" />
-          </svg>
-          <svg class="bulk-action-icon" [matMenuTriggerFor]="bulkMenu"
-            [class.disabled]="filters?.series_id && !filters?.season" xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24">
-            <title>Bulk Actions</title>
-            <path
-              d="M6,2A4,4 0 0,1 10,6V8H14V6A4,4 0 0,1 18,2A4,4 0 0,1 22,6A4,4 0 0,1 18,10H16V14H18A4,4 0 0,1 22,18A4,4 0 0,1 18,22A4,4 0 0,1 14,18V16H10V18A4,4 0 0,1 6,22A4,4 0 0,1 2,18A4,4 0 0,1 6,14H8V10H6A4,4 0 0,1 2,6A4,4 0 0,1 6,2M16,18A2,2 0 0,0 18,20A2,2 0 0,0 20,18A2,2 0 0,0 18,16H16V18M14,10H10V14H14V10M6,16A2,2 0 0,0 4,18A2,2 0 0,0 6,20A2,2 0 0,0 8,18V16H6M8,6A2,2 0 0,0 6,4A2,2 0 0,0 4,6A2,2 0 0,0 6,8H8V6M18,8A2,2 0 0,0 20,6A2,2 0 0,0 18,4A2,2 0 0,0 16,6V8H18Z" />
-          </svg>
-          <mat-menu #bulkMenu="matMenu">
-            <button mat-menu-item (click)="bulkAction(bulkActionType.Hide)">Hide all</button>
-            <button mat-menu-item (click)="bulkAction(bulkActionType.Unhide)">Unhide all</button>
-            <button mat-menu-item (click)="bulkAction(bulkActionType.Favorite)"
-              [disabled]="filters?.view_type == viewModeEnum.Categories">Favorite all</button>
-            <button mat-menu-item (click)="bulkAction(bulkActionType.Unfavorite)"
-              [disabled]="filters?.view_type == viewModeEnum.Categories">Unfavorite all</button>
-          </mat-menu>
-          <app-sort-button></app-sort-button>
-        </div>
-      </div>
-    </div>
-
-    <div class="btn-group mx-auto d-block mb-3" style="width: fit-content">
-      <button id="viewMode-0" (click)="switchMode(viewModeEnum.All)" class="btn btn-primary"
-        [ngClass]="{ active: filters?.view_type == viewModeEnum.All }">
-        All
-      </button>
-      <button id="viewMode-1" (click)="switchMode(viewModeEnum.Categories)" class="btn btn-primary"
-        [ngClass]="{ active: filters?.view_type == viewModeEnum.Categories }">
-        Categories
-      </button>
-      <button id="viewMode-2" (click)="switchMode(viewModeEnum.History)" class="btn btn-primary"
-        [ngClass]="{ active: filters?.view_type == viewModeEnum.History }">
-        History
-      </button>
-      <button id="viewMode-3" (click)="switchMode(viewModeEnum.Favorites)" class="btn btn-primary"
-        [ngClass]="{ active: filters?.view_type == viewModeEnum.Favorites }">
-        Favorites
-      </button>
-      <button id="viewMode-4" (click)="switchMode(viewModeEnum.Hidden)" class="btn btn-primary"
-        [ngClass]="{ active: filters?.view_type == viewModeEnum.Hidden }">
-        Hidden
-      </button>
-    </div>
-
-    <div class="mx-auto filterBox" style="margin-bottom: 1rem" *ngIf="filtersVisible()" @fadeInOut>
-      <div class="form-check form-check-inline form-switch">
-        <input [(ngModel)]="chkLiveStream" (ngModelChange)="updateMediaTypes(mediaTypeEnum.livestream)"
-          class="form-check-input" id="filter-0" type="checkbox" />
-        <label class="form-check-label" for="filter-0"> Livestreams </label>
-      </div>
-      <div class="form-check form-check-inline form-switch">
-        <input [(ngModel)]="chkMovie" (ngModelChange)="updateMediaTypes(mediaTypeEnum.movie)" class="form-check-input"
-          id="filter-1" type="checkbox" />
-        <label *ngIf="anyXtream()" class="form-check-label" for="filter-1"> Movies/Vods </label>
-        <label *ngIf="!anyXtream()"> Movies/Vods/Series </label>
-      </div>
-      <div *ngIf="anyXtream()" class="form-check form-check-inline form-switch">
-        <input [(ngModel)]="chkSerie" (ngModelChange)="updateMediaTypes(mediaTypeEnum.serie)" class="form-check-input"
-          id="filter-2" type="checkbox" />
-        <label class="form-check-label" for="filter-2"> Series </label>
-      </div>
-    </div>
-
-    <div class="mb-3 d-flex align-items-center" *ngIf="
-        (filters?.view_type == viewModeEnum.Categories && filters?.group_id) || filters?.series_id
-      ">
-      <svg (click)="goBack()" fill="currentColor" class="go-back-arrow clickable" xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24">
-        <path
-          d="M2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12M18,11H10L13.5,7.5L12.08,6.08L6.16,12L12.08,17.92L13.5,16.5L10,13H18V11Z" />
-      </svg>
-      <h4 *ngIf="this.nodeStack.hasNodes()" class="ms-2 mb-0">
-        {{ this.nodeStack.get()?.toString() }}
-      </h4>
-    </div>
-    <div class="row gy-3" [@fade]="channelsVisible ? 'visible' : 'hidden'">
-      <app-channel-tile [attr.id]="i == 0 ? 'first' : null" *ngFor="let channel of channels; let i = index"
-        class="col-lg-4 col-md-4" [id]="i" [channel]="channel" [viewMode]="viewType"></app-channel-tile>
-    </div>
+<ng-keyboard-shortcuts-help [key]="'f1'" [closeKey]="'escape'" [title]="'Tastenkürzel'" />
+<div class="tvcon-shell">
+  <header>
+    <span class="brand">TV<span>Con</span></span>
+    <nav aria-label="Hauptnavigation">
+      <button [class.active]="section === 'live'" [attr.aria-current]="section === 'live' ? 'page' : null" (click)="selectSection('live')">Live-TV</button>
+      <button [class.active]="section === 'movies'" [attr.aria-current]="section === 'movies' ? 'page' : null" (click)="selectSection('movies')">Filme</button>
+      <button [class.active]="section === 'series'" [attr.aria-current]="section === 'series' ? 'page' : null" (click)="selectSection('series')">Serien</button>
+      <button [class.active]="section === 'favorites'" [attr.aria-current]="section === 'favorites' ? 'page' : null" (click)="selectSection('favorites')">Favoriten</button>
+    </nav>
+    <input #search id="search" type="search" autocomplete="off" aria-label="Inhalte durchsuchen" placeholder="Suchen …  Ctrl+F" />
+    <button class="network-status" [class.vpn-active]="network.status.state === 'ACTIVE'" [class.vpn-inactive]="network.status.state === 'INACTIVE'" [title]="network.status.interface || 'Netzwerkstatus aktualisieren'" (click)="network.refresh()" [disabled]="network.loading"><span class="status-dot"></span>{{ network.status.state === 'ACTIVE' ? 'VPN aktiv' : network.status.state === 'INACTIVE' ? 'Kein VPN' : 'VPN-Status unbekannt' }}<span *ngIf="network.status.public_ip"> · {{ network.status.public_ip }}</span></button>
+    <button (click)="openSettings()">Einstellungen</button>
+  </header>
+  <div class="tools" *ngIf="section !== 'movies'">
+    <button id="viewMode-0" [class.active]="filters?.view_type === viewModeEnum.All" (click)="switchMode(viewModeEnum.All)">Alle</button>
+    <button id="viewMode-1" [class.active]="filters?.view_type === viewModeEnum.Categories" (click)="switchMode(viewModeEnum.Categories)">Kategorien</button>
+    <button id="viewMode-2" [class.active]="filters?.view_type === viewModeEnum.History" (click)="switchMode(viewModeEnum.History)">Verlauf</button>
+    <button id="viewMode-3" (click)="switchMode(viewModeEnum.Favorites)">Favoriten</button>
+    <button id="viewMode-4" [class.active]="filters?.view_type === viewModeEnum.Hidden" (click)="switchMode(viewModeEnum.Hidden)">Ausgeblendet</button>
+    <details *ngIf="filtersVisible()"><summary>Medientypen</summary><div class="media-options">
+      <label><input id="filter-0" type="checkbox" [(ngModel)]="chkLiveStream" (ngModelChange)="updateMediaTypes(mediaTypeEnum.livestream)" /> Live</label>
+      <label><input id="filter-1" type="checkbox" [(ngModel)]="chkMovie" (ngModelChange)="updateMediaTypes(mediaTypeEnum.movie)" /> Filme</label>
+      <label><input id="filter-2" type="checkbox" [(ngModel)]="chkSerie" (ngModelChange)="updateMediaTypes(mediaTypeEnum.serie)" /> Serien</label>
+    </div></details>
+    <button (click)="toggleKeywords()" [class.active]="filters?.use_keywords" [attr.aria-pressed]="!!filters?.use_keywords">Stichwortsuche</button>
+    <button (click)="reload()">Neu laden</button>
+    <app-sort-button></app-sort-button>
+    <button [matMenuTriggerFor]="bulkMenu" [disabled]="!!filters?.series_id && !filters?.season">Aktionen</button>
+    <mat-menu #bulkMenu="matMenu">
+      <button mat-menu-item (click)="bulkAction(bulkActionType.Hide)">Alle ausblenden</button>
+      <button mat-menu-item (click)="bulkAction(bulkActionType.Unhide)">Alle einblenden</button>
+      <button mat-menu-item [disabled]="filters?.view_type === viewModeEnum.Categories" (click)="bulkAction(bulkActionType.Favorite)">Alle favorisieren</button>
+      <button mat-menu-item [disabled]="filters?.view_type === viewModeEnum.Categories" (click)="bulkAction(bulkActionType.Unfavorite)">Favoriten entfernen</button>
+    </mat-menu>
   </div>
-
-  <button [@fade]="channelsVisible ? 'visible' : 'hidden'" *ngIf="reachedMax === false" (click)="loadMore()"
-    class="btn btn-outline-primary mx-auto d-block mt-3">
-    Load More
-  </button>
-</div>
-
-<div *ngIf="showScrollTop" (click)="scrollToTop()" class="scroll-to-top">
-  <svg viewBox="0 0 24 24">
-    <path fill="currentColor" d="M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z" />
-  </svg>
+  <div class="tools movie-tools" *ngIf="section === 'movies'">
+    <app-sort-button></app-sort-button>
+    <button (click)="reload()">Neu laden</button>
+    <button [matMenuTriggerFor]="movieActions">Weitere Aktionen</button>
+    <mat-menu #movieActions="matMenu">
+      <button mat-menu-item (click)="switchMode(viewModeEnum.All)">Alle Filme</button>
+      <button mat-menu-item (click)="switchMode(viewModeEnum.History)">Verlauf</button>
+      <button mat-menu-item (click)="switchMode(viewModeEnum.Hidden)">Ausgeblendet</button>
+      <button mat-menu-item (click)="toggleKeywords()">Stichwortsuche {{ filters?.use_keywords ? '✓' : '' }}</button>
+      <button mat-menu-item (click)="bulkAction(bulkActionType.Hide)">Alle ausblenden</button>
+      <button mat-menu-item (click)="bulkAction(bulkActionType.Unhide)">Alle einblenden</button>
+      <button mat-menu-item (click)="bulkAction(bulkActionType.Favorite)">Alle favorisieren</button>
+      <button mat-menu-item (click)="bulkAction(bulkActionType.Unfavorite)">Favoriten entfernen</button>
+    </mat-menu>
+  </div>
+  <div class="workspace" [class.live]="section === 'live'">
+    <aside aria-label="Kategorien">
+      <h2>Kategorien</h2>
+      <form (ngSubmit)="loadCategories()"><input name="categorySearch" [(ngModel)]="categoryQuery" aria-label="Kategorien durchsuchen" placeholder="Kategorie suchen …" /><button type="submit">Suchen</button></form>
+      <button class="all-category" [class.active]="!selectedCategory" (click)="selectCategory()">Alle Kategorien</button>
+      <cdk-virtual-scroll-viewport #categoryViewport itemSize="44" class="category-list" (scrolledIndexChange)="categoryScrolled($event)" aria-label="Kategorieauswahl">
+        <button *cdkVirtualFor="let category of categories; trackBy: trackChannel" class="category" [class.active]="selectedCategory?.id === category.id" [attr.aria-pressed]="selectedCategory?.id === category.id" [title]="category.name" (click)="selectCategory(category)">{{ category.name }}</button>
+      </cdk-virtual-scroll-viewport>
+      <p *ngIf="!categories.length && !categoryLoading" class="muted">Keine Kategorien gefunden.</p>
+      <p *ngIf="categoryLoading" role="status">Kategorien werden geladen …</p>
+    </aside>
+    <section class="library" aria-label="Mediathek" [attr.aria-busy]="loading">
+      <div class="library-heading"><button *ngIf="nodeStack.hasNodes()" (click)="goBack()">← Zurück</button><h1>{{ nodeStack.get()?.name || selectedCategory?.name || (section === 'live' ? 'Live-TV' : section === 'movies' ? 'Filme' : section === 'series' ? 'Serien' : 'Favoriten') }}</h1></div>
+      <p class="muted" *ngIf="loading" role="status">Inhalte werden geladen …</p>
+      <div *ngIf="section !== 'movies'" class="content" [class.posters]="section !== 'live'" [style.opacity]="channelsVisible ? 1 : 0.5">
+        <app-channel-tile *ngFor="let channel of channels; let i = index; trackBy: trackChannel" [attr.id]="i === 0 ? 'first' : null" [channel]="channel" [id]="i" [viewMode]="viewType" [presentation]="section === 'live' ? 'list' : 'poster'" [categoryName]="selectedCategory?.name" [selected]="selectedChannel?.id === channel.id" (channelSelected)="selectChannel($event)"></app-channel-tile>
+      </div>
+      <cdk-virtual-scroll-viewport *ngIf="section === 'movies'" #movieViewport [itemSize]="movieRowHeight" class="movie-viewport" (scrolledIndexChange)="movieScrolled($event)">
+        <div *cdkVirtualFor="let row of movieRows; let rowIndex = index" class="movie-row" [style.height.px]="movieRowHeight" [style.--movie-row-height]="movieRowHeight + 'px'" [style.grid-template-columns]="'repeat(' + movieColumns + ', minmax(0, 1fr))'">
+          <app-channel-tile *ngFor="let channel of row; let i = index; trackBy: trackChannel" [channel]="channel" [id]="rowIndex * movieColumns + i" [viewMode]="viewType" presentation="poster" [movieLibrary]="true" [selected]="selectedChannel?.id === channel.id" (channelSelected)="selectChannel($event)"></app-channel-tile>
+        </div>
+      </cdk-virtual-scroll-viewport>
+      <div *ngIf="section === 'movies'" class="movie-loading" role="status">
+        <span *ngIf="loading">Weitere Filme werden geladen …</span>
+        <span *ngIf="!loading && reachedMax && channels.length">Ende der Filmliste · {{ channels.length }} Filme</span>
+        <button *ngIf="!loading && !reachedMax" (click)="loadMore()">Weitere Filme laden</button>
+      </div>
+      <div class="empty" *ngIf="!loading && !channels.length">
+        <h2>{{ section === 'series' ? 'Keine Serien verfügbar' : section === 'favorites' ? 'Noch keine passenden Favoriten' : 'Keine Inhalte gefunden' }}</h2>
+        <p *ngIf="section === 'series'">Diese Quelle liefert hier keine separat erkannten Serien. M3U-Inhalte werden entsprechend ihrer vorhandenen Medientypen angezeigt; Serien können unter Filme enthalten sein.</p>
+        <p *ngIf="section === 'favorites'">Über das Kontextmenü eines Senders oder Films lassen sich Favoriten hinzufügen.</p>
+        <p *ngIf="section !== 'series' && section !== 'favorites'">Wähle eine andere Kategorie oder passe deine Suche an. Quellen verwaltest du in den Einstellungen.</p>
+      </div>
+      <footer *ngIf="section !== 'movies'" class="pager"><button [disabled]="loading || !filters || filters.page <= 1" (click)="previousPage()">← Zurück</button><span>Seite {{ filters?.page || 1 }} · {{ channels.length }} Einträge</span><button [disabled]="loading || reachedMax" (click)="loadMore()">Weiter →</button></footer>
+    </section>
+    <section class="programme" *ngIf="section === 'live'" aria-label="Sender und Programm">
+      <div class="screen">
+        <span class="eyebrow">TVCon · Live-TV</span>
+        <img *ngIf="selectedChannel?.image && selectedArtwork" [src]="selectedChannel?.image" alt="" (error)="selectedArtwork = false" />
+        <h2>{{ selectedChannel?.name || 'Wähle einen Sender' }}</h2>
+        <p>Wiedergabe im externen mpv-Player</p>
+        <p *ngIf="!selectedChannel" class="muted">Ein Klick auf einen Sender startet die vorhandene Wiedergabe. Mit Rechtsklick stehen weitere Aktionen bereit.</p>
+      </div>
+      <ng-container *ngFor="let selected of selectedChannel ? [selectedChannel] : []; trackBy: trackChannel">
+        <app-channel-tile #playerTile [channel]="selected" [id]="-1" [viewMode]="viewType"></app-channel-tile>
+        <div class="player-actions"><button (click)="playerTile.click()">{{ playerTile.starting ? 'Start abbrechen' : 'In mpv öffnen' }}</button><button (click)="playerTile.favorite()">{{ selected.favorite ? '★ Favorit entfernen' : '☆ Favorisieren' }}</button><button (click)="playerTile.record()" *ngIf="selected.media_type === mediaTypeEnum.livestream">Aufnehmen</button><button *ngIf="playerTile.showEPG()" (click)="playerTile.showEPGModal()">Programm öffnen</button></div>
+        <p *ngIf="epgLoading" role="status">Programm wird geladen …</p>
+        <p class="muted">{{ epgMessage }}</p>
+        <article *ngIf="currentProgramme"><span class="eyebrow">Jetzt · {{ currentProgramme.start_time }} – {{ currentProgramme.end_time }}</span><h3>{{ currentProgramme.title }}</h3><p>{{ currentProgramme.description }}</p></article>
+        <article *ngIf="nextProgramme"><span class="eyebrow">Als Nächstes · {{ nextProgramme.start_time }}</span><h3>{{ nextProgramme.title }}</h3><p>{{ nextProgramme.description }}</p></article>
+      </ng-container>
+    </section>
+  </div>
 </div>
